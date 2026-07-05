@@ -16,7 +16,7 @@ services:
       - key: Sarab__DevBots__UseLlm
         value: "true"
       - key: Sarab__DevBots__Model
-        value: gpt-4.1-mini
+        value: gpt-5.4-mini
       - key: OpenAI__ApiKey
         sync: false
       - key: ConnectionStrings__SarabDb

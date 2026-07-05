@@ -90,5 +90,5 @@ Dev bots are enabled with:
 ```text
 Sarab__DevBots__Enabled=true
 Sarab__DevBots__UseLlm=true
-Sarab__DevBots__Model=gpt-4.1-mini
+Sarab__DevBots__Model=gpt-5.4-mini
 ```

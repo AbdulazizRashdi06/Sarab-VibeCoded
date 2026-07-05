@@ -892,6 +892,17 @@ function GameRoom({
                 <NumberInput label="Claim seconds" value={selfReportSeconds} min={5} max={90} onChange={setSelfReportSeconds} />
                 <NumberInput label="Vote seconds" value={voteSeconds} min={10} max={180} onChange={setVoteSeconds} />
                 <button
+                  className="secondary wide"
+                  type="button"
+                  onClick={() => {
+                    playSound('ready', soundMuted)
+                    return onAction('AddDevBots', 3)
+                  }}
+                >
+                  <CirclePlus size={18} />
+                  Add 3 dev bots
+                </button>
+                <button
                   className="primary wide"
                   type="button"
                   disabled={!categoryId || activeLobbyPlayers < 4}
@@ -909,19 +920,6 @@ function GameRoom({
                   <Play size={18} />
                   {allReady ? t.start : 'Start anyway'}
                 </button>
-                {import.meta.env.DEV && (
-                  <button
-                    className="secondary wide"
-                    type="button"
-                    onClick={() => {
-                      playSound('ready', soundMuted)
-                      return onAction('AddDevBots', 3)
-                    }}
-                  >
-                    <CirclePlus size={18} />
-                    Add 3 dev bots
-                  </button>
-                )}
               </div>
             )}
           </div>

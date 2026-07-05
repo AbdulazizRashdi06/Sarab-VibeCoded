@@ -4,7 +4,7 @@ Development bots are for local playtesting only. They let one human host fill a 
 
 ## How They Work
 
-- In a development build, the lobby host sees `Add 3 dev bots`.
+- When dev bots are enabled on the backend, the lobby host sees `Add 3 dev bots`.
 - Bots join as ready players and act automatically during answer, tell, and vote phases.
 - Bots require `OPENAI_API_KEY` or `OpenAI:ApiKey`; there is no deterministic fallback.
 - If the LLM call fails, the bot turn is retried on the next runner tick.
@@ -15,7 +15,7 @@ Default local behavior:
 
 ```powershell
 $env:OPENAI_API_KEY="your-key"
-$env:Sarab__DevBots__Model="gpt-4.1-mini"
+$env:Sarab__DevBots__Model="gpt-5.4-mini"
 dotnet run --project src/Sarab.Api/Sarab.Api.csproj --urls http://localhost:5000
 ```
 

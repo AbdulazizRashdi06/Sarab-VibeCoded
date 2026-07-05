@@ -41,7 +41,7 @@ public sealed class DevBotBrain(HttpClient http, IConfiguration configuration) :
 
     private object BuildRequest(DevBotTurn turn)
     {
-        var model = configuration["Sarab:DevBots:Model"] ?? configuration["OpenAI:Model"] ?? "gpt-4.1-mini";
+        var model = configuration["Sarab:DevBots:Model"] ?? configuration["OpenAI:Model"] ?? "gpt-5.4-mini";
         return new
         {
             model,
