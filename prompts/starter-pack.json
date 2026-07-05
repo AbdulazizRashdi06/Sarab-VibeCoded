@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "language": "en",
+  "name": "Sarab Starter Pack",
+  "categories": [
+    {
+      "id": "family-table",
+      "name": "Family Table",
+      "rounds": [
+        {
+          "id": "ocean-lake",
+          "prompts": ["Ocean", "Lake"],
+          "closeness": 82,
+          "obviousAnswers": {
+            "0": ["water", "blue", "waves"],
+            "1": ["water", "fish", "shore"]
+          }
+        },
+        {
+          "id": "coffee-tea",
+          "prompts": ["Coffee", "Tea"],
+          "closeness": 76,
+          "obviousAnswers": {
+            "0": ["drink", "beans", "morning"],
+            "1": ["drink", "leaves", "hot"]
+          }
+        },
+        {
+          "id": "mountain-hill",
+          "prompts": ["Mountain", "Hill"],
+          "closeness": 88,
+          "obviousAnswers": {
+            "0": ["high", "snow", "climb"],
+            "1": ["green", "small", "climb"]
+          }
+        }
+      ]
+    }
+  ]
+}

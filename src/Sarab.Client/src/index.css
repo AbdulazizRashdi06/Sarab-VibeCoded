@@ -1,0 +1,74 @@
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Sora:wght@400;500;600;700;800&display=swap");
+
+:root {
+  --surface-bright: #f4ecd8;
+  --surface-container: #e8dfc7;
+  --surface: #f9f6ef;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #efe7d3;
+  --surface-container-high: #dcd1b9;
+  --surface-container-highest: #d4c8ad;
+  --surface-variant: #dfd5be;
+  --on-surface: #4a4036;
+  --on-surface-variant: #6b6054;
+  --outline: #a89f91;
+  --outline-variant: #c9c0b1;
+  --primary: #d05b43;
+  --on-primary: #ffffff;
+  --primary-container: #f2a68d;
+  --on-primary-container: #590028;
+  --inverse-primary: #ffb1c4;
+  --secondary: #7a9b83;
+  --on-secondary: #ffffff;
+  --secondary-container: #a3c4ab;
+  --on-secondary-container: #2c3b2f;
+  --secondary-fixed: #ffe16d;
+  --on-secondary-fixed: #221b00;
+  --on-secondary-fixed-variant: #544600;
+  --tertiary-container: #8db596;
+  --on-tertiary-container: #00311f;
+  --inverse-surface: #4a4036;
+  --inverse-on-surface: #f9f6ef;
+  --error: #ffb4ab;
+  --error-container: #93000a;
+  --squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none'%3E%3Cpath d='M0 5 Q 12.5 0, 25 5 T 50 5 T 75 5 T 100 5' stroke='%23d05b43' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  font-family: "Be Vietnam Pro", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--on-surface);
+  background-color: var(--surface);
+  background-image:
+    radial-gradient(var(--surface-container) 1px, transparent 1px),
+    radial-gradient(var(--surface-container) 1px, transparent 1px);
+  background-position: 0 0, 10px 10px;
+  background-size: 20px 20px;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html {
+  background: var(--surface);
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background: transparent;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}

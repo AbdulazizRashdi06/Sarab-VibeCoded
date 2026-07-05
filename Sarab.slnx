@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Sarab.Api/Sarab.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Sarab.Tests/Sarab.Tests.csproj" />
+  </Folder>
+</Solution>

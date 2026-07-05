@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: sarab-devtime
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: Sarab__DevBots__Enabled
+        value: "true"
+      - key: Sarab__DevBots__UseLlm
+        value: "true"
+      - key: Sarab__DevBots__Model
+        value: gpt-4.1-mini
+      - key: OpenAI__ApiKey
+        sync: false
+      - key: ConnectionStrings__SarabDb
+        sync: false
+      - key: Supabase__JwtIssuer
+        sync: false
+      - key: Supabase__JwtAudience
+        value: authenticated
+      - key: Supabase__Url
+        sync: false
+      - key: Supabase__ServiceRoleKey
+        sync: false
+      - key: Supabase__AvatarBucket
+        value: avatar-parts
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
