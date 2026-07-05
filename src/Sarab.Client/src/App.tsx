@@ -22,6 +22,7 @@ import {
   Volume2,
   VolumeX,
   Vote,
+  RotateCcw,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
@@ -1095,8 +1096,32 @@ function GameRoom({
 
         {(room.phase === 'Results' || room.phase === 'GameOver') && (
           <div className={room.phase === 'GameOver' ? 'phase-panel final-panel' : 'phase-panel'}>
-            {room.phase === 'Results' && room.lastResult && <RoundLeaderboard result={room.lastResult} players={room.players} parts={avatarParts} />}
-            {room.phase === 'GameOver' && <FinalLeaderboard players={room.players} parts={avatarParts} />}
+            {room.phase === 'Results' && room.lastResult && (
+              <RoundLeaderboard
+                result={room.lastResult}
+                players={room.players}
+                answers={room.answers}
+                parts={avatarParts}
+              />
+            )}
+            {room.phase === 'GameOver' && (
+              <FinalLeaderboard
+                players={room.players}
+                answers={room.answers}
+                parts={avatarParts}
+                isHost={isHost}
+                onRetry={() => {
+                  playSound('start', soundMuted)
+                  return onAction('StartGame', {
+                    categoryId,
+                    totalRounds: rounds,
+                    answerSeconds,
+                    selfReportSeconds,
+                    voteSeconds,
+                  })
+                }}
+              />
+            )}
           </div>
         )}
 
@@ -1550,14 +1575,26 @@ type StandingRow = {
   rank: number
   delta: number
   badge: StandingBadge
+  answerText?: string
   reasons: string[]
   isImposter: boolean
 }
 
-function RoundLeaderboard({ result, players, parts }: { result: RoundResult; players: Player[]; parts: AvatarPart[] }) {
-  const standings = useMemo(() => buildStandings(players, result), [players, result])
+function RoundLeaderboard({
+  result,
+  players,
+  answers,
+  parts,
+}: {
+  result: RoundResult
+  players: Player[]
+  answers: Answer[]
+  parts: AvatarPart[]
+}) {
+  const standings = useMemo(() => buildStandings(players, result, answers), [players, result, answers])
   const miragePlayer = players.find((player) => player.id === result.imposterPlayerId)
   const mirageName = miragePlayer?.name ?? 'Someone'
+  const mirageAnswer = answers.find((answer) => answer.id === result.imposterAnswerId)
   const jackpot = result.rollover > 0
   const tableCaught = result.events.some((event) => event.reason === 'Caught by confidence votes')
   const biggestGain = standings.filter((row) => row.delta > 0).sort((a, b) => b.delta - a.delta)[0]
@@ -1584,6 +1621,13 @@ function RoundLeaderboard({ result, players, parts }: { result: RoundResult; pla
           <span>Rollover {result.rollover}</span>
           <span>{tableCaught ? 'Caught' : 'Not caught'}</span>
         </div>
+        {mirageAnswer && (
+          <div className="mirage-word-card">
+            <span>Imposter word</span>
+            <strong>{mirageAnswer.text}</strong>
+            <small>written by {mirageAnswer.authorName ?? mirageName}</small>
+          </div>
+        )}
         {(biggestGain || biggestLoss) && (
           <div className="mover-strip" aria-label="Round movers">
             {biggestGain && (
@@ -1635,8 +1679,19 @@ function LeaderboardRows({ rows, parts, showDelta }: { rows: StandingRow[]; part
           <AvatarView avatar={row.player.avatar} parts={parts} size="mini" />
           <div className="leader-meta">
             <strong>{row.player.name}</strong>
+            {row.answerText && (
+              <span className={row.isImposter ? 'leader-word imposter-word' : 'leader-word'}>
+                Word <b>{row.answerText}</b>
+              </span>
+            )}
             <span className={`leader-badge ${badgeClass(row.badge)}`}>{row.badge}</span>
-            {showDelta && row.reasons.length > 0 && <small className="leader-reasons">{row.reasons.join(' + ')}</small>}
+            {showDelta && row.reasons.length > 0 && (
+              <span className="leader-reasons">
+                {row.reasons.map((reason, index) => (
+                  <small key={`${reason}-${index}`}>{reason}</small>
+                ))}
+              </span>
+            )}
           </div>
           <div className="score-stack">
             {showDelta && <span className={row.delta >= 0 ? 'round-delta gain' : 'round-delta loss'}>{formatDelta(row.delta)}</span>}
@@ -1648,8 +1703,20 @@ function LeaderboardRows({ rows, parts, showDelta }: { rows: StandingRow[]; part
   )
 }
 
-function FinalLeaderboard({ players, parts }: { players: Player[]; parts: AvatarPart[] }) {
-  const ranked = useMemo(() => buildFinalStandings(players), [players])
+function FinalLeaderboard({
+  players,
+  answers,
+  parts,
+  isHost,
+  onRetry,
+}: {
+  players: Player[]
+  answers: Answer[]
+  parts: AvatarPart[]
+  isHost: boolean
+  onRetry: () => Promise<unknown>
+}) {
+  const ranked = useMemo(() => buildFinalStandings(players, answers), [players, answers])
   const winner = ranked[0]
   if (!winner) {
     return null
@@ -1677,6 +1744,12 @@ function FinalLeaderboard({ players, parts }: { players: Player[]; parts: Avatar
         </div>
         <LeaderboardRows rows={ranked} parts={parts} />
       </section>
+      {isHost && (
+        <button className="primary wide retry-game" type="button" onClick={() => void onRetry()}>
+          <RotateCcw size={18} />
+          Retry game
+        </button>
+      )}
     </div>
   )
 }
@@ -1720,8 +1793,9 @@ function friendlyHighlight(highlight: string) {
     .replace(/(\d+) player\(s\)/g, '$1 players')
 }
 
-function buildStandings(players: Player[], result: RoundResult): StandingRow[] {
+function buildStandings(players: Player[], result: RoundResult, answers: Answer[]): StandingRow[] {
   const deltas = new Map<string, number>()
+  const answersByPlayer = new Map(answers.flatMap((answer) => answer.authorId ? [[answer.authorId, answer.text] as const] : []))
   for (const event of result.events) {
     deltas.set(event.playerId, (deltas.get(event.playerId) ?? 0) + event.delta)
   }
@@ -1735,13 +1809,15 @@ function buildStandings(players: Player[], result: RoundResult): StandingRow[] {
         rank: index + 1,
         delta: deltas.get(player.id) ?? 0,
         badge: roundBadgeFor(player, result, events),
+        answerText: answersByPlayer.get(player.id),
         reasons: eventReasons(events),
         isImposter: player.id === result.imposterPlayerId,
       }
     })
 }
 
-function buildFinalStandings(players: Player[]): StandingRow[] {
+function buildFinalStandings(players: Player[], answers: Answer[]): StandingRow[] {
+  const answersByPlayer = new Map(answers.flatMap((answer) => answer.authorId ? [[answer.authorId, answer.text] as const] : []))
   return [...players]
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
     .map((player, index) => ({
@@ -1749,6 +1825,7 @@ function buildFinalStandings(players: Player[]): StandingRow[] {
       rank: index + 1,
       delta: 0,
       badge: index === 0 ? 'Winner' : index === 1 ? 'Runner up' : 'Safe',
+      answerText: answersByPlayer.get(player.id),
       reasons: [],
       isImposter: false,
     }))
