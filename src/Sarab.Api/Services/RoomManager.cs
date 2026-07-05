@@ -585,7 +585,7 @@ public sealed class RoomManager(IServiceScopeFactory scopeFactory)
                             player.Ready = false;
                         }
 
-                        if (!TryStartNextRound(room))
+                        if (!TryStartNextRoundFromResults(room))
                         {
                             room.Phase = RoomPhase.GameOver;
                             room.PhaseEndsAt = null;
@@ -843,6 +843,18 @@ public sealed class RoomManager(IServiceScopeFactory scopeFactory)
 
         room.CurrentRoundState = Guid.NewGuid();
         return true;
+    }
+
+    private bool TryStartNextRoundFromResults(RoomState room)
+    {
+        try
+        {
+            return TryStartNextRound(room);
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 
     private RoomState GetRoomByConnection(string connectionId)

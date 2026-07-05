@@ -125,11 +125,34 @@ public sealed class GameHub(
 
     public async Task AdvancePhase()
     {
-        var code = rooms.GetRoomForConnection(Context.ConnectionId);
-        await rooms.AdvancePhaseAsync(Context.ConnectionId, Context.ConnectionAborted);
-        if (code is not null)
+        string? code = null;
+        try
         {
-            await BroadcastRoom(code);
+            code = rooms.GetRoomForConnection(Context.ConnectionId);
+            await rooms.AdvancePhaseAsync(Context.ConnectionId, Context.ConnectionAborted);
+            if (code is not null)
+            {
+                await BroadcastRoom(code);
+            }
+        }
+        catch (HubException)
+        {
+            throw;
+        }
+        catch (OperationCanceledException) when (Context.ConnectionAborted.IsCancellationRequested)
+        {
+            logger.LogWarning("AdvancePhase was canceled for connection {ConnectionId}.", Context.ConnectionId);
+            throw new HubException("The request was interrupted. Try again.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "AdvancePhase failed for connection {ConnectionId} in room {RoomCode}.", Context.ConnectionId, code ?? "unknown");
+            if (code is not null)
+            {
+                await BroadcastRoom(code, CancellationToken.None);
+            }
+
+            throw new HubException($"Advance failed: {ex.Message}");
         }
     }
 
@@ -189,11 +212,24 @@ public sealed class GameHub(
         await base.OnDisconnectedAsync(exception);
     }
 
-    private async Task BroadcastRoom(string roomCode)
+    private Task BroadcastRoom(string roomCode) => BroadcastRoom(roomCode, CancellationToken.None);
+
+    private async Task BroadcastRoom(string roomCode, CancellationToken cancellationToken)
     {
         foreach (var (connectionId, snapshot) in rooms.GetSnapshotsForRoom(roomCode))
         {
-            await Clients.Client(connectionId).SendAsync("roomUpdated", snapshot, Context.ConnectionAborted);
+            try
+            {
+                await Clients.Client(connectionId).SendAsync("roomUpdated", snapshot, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Could not broadcast Sarab room {RoomCode} to connection {ConnectionId}.", roomCode, connectionId);
+            }
         }
     }
 
