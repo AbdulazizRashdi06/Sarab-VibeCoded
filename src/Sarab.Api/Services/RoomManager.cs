@@ -578,14 +578,18 @@ public sealed class RoomManager(IServiceScopeFactory scopeFactory)
                     }
                     else
                     {
-                        foreach (var player in room.Players.Where(x => x.WaitingForNextRound))
+                        foreach (var player in room.Players.Where(x => x.WaitingForNextRound).ToList())
                         {
                             player.WaitingForNextRound = false;
-                player.Score = ScoringEngine.StartingScore;
-                player.Ready = false;
-            }
+                            player.Score = ScoringEngine.StartingScore;
+                            player.Ready = false;
+                        }
 
-                        StartNextRound(room);
+                        if (!TryStartNextRound(room))
+                        {
+                            room.Phase = RoomPhase.GameOver;
+                            room.PhaseEndsAt = null;
+                        }
                     }
                     break;
             }
@@ -772,9 +776,23 @@ public sealed class RoomManager(IServiceScopeFactory scopeFactory)
 
     private void StartNextRound(RoomState room)
     {
+        if (!TryStartNextRound(room))
+        {
+            throw new InvalidOperationException("Sarab needs at least one active player to start a round.");
+        }
+    }
+
+    private bool TryStartNextRound(RoomState room)
+    {
         if (room.Category is null)
         {
             throw new InvalidOperationException("Choose a category before starting.");
+        }
+
+        var activePlayers = room.ActivePlayers().ToList();
+        if (activePlayers.Count == 0)
+        {
+            return false;
         }
 
         room.CurrentRound++;
@@ -787,6 +805,10 @@ public sealed class RoomManager(IServiceScopeFactory scopeFactory)
         room.SelfReportDone.Clear();
         room.LastResult = null;
         room.SelfReportOpenedAt = DateTimeOffset.UtcNow;
+        foreach (var player in room.Players)
+        {
+            player.BotTurnInProgress = false;
+        }
 
         var available = room.Category.Rounds
             .Where(round => !room.RecentRoundIds.Contains(round.Id))
@@ -811,7 +833,6 @@ public sealed class RoomManager(IServiceScopeFactory scopeFactory)
         room.MajorityPromptIndex = flip ? 0 : 1;
         room.AlternatePromptIndex = flip ? 1 : 0;
 
-        var activePlayers = room.ActivePlayers().ToList();
         var imposter = activePlayers[_random.Next(activePlayers.Count)];
         room.ImposterPlayerId = imposter.Id;
         foreach (var player in activePlayers)
@@ -821,6 +842,7 @@ public sealed class RoomManager(IServiceScopeFactory scopeFactory)
         }
 
         room.CurrentRoundState = Guid.NewGuid();
+        return true;
     }
 
     private RoomState GetRoomByConnection(string connectionId)
