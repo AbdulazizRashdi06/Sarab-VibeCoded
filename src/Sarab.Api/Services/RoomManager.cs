@@ -237,7 +237,7 @@ public sealed class RoomManager(IServiceScopeFactory scopeFactory)
                 switch (room.Phase)
                 {
                     case RoomPhase.Answer when !room.Answers.ContainsKey(bot.Id):
-                        var answer = CleanBotAnswer(decision.Answer);
+                        var answer = PickBotAnswer(decision);
                         room.Answers[bot.Id] = new AnswerState(Guid.NewGuid(), bot.Id, answer, bot.PromptIndex);
                         changed = true;
                         break;
@@ -925,6 +925,18 @@ public sealed class RoomManager(IServiceScopeFactory scopeFactory)
         return letters.Length == 0 ? "sand" : letters;
     }
 
+    private string PickBotAnswer(DevBotDecision decision)
+    {
+        var candidates = decision.AnswerCandidates
+            .Select(CleanBotAnswer)
+            .Where(answer => !string.Equals(answer, "sand", StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(5)
+            .ToList();
+
+        return candidates.Count == 0 ? "sand" : candidates[_random.Next(candidates.Count)];
+    }
+
     private static void ApplyBotTellChoice(RoomState room, PlayerState bot, string? tellChoice)
     {
         var choice = tellChoice?.Trim().ToLowerInvariant();
@@ -1118,4 +1130,4 @@ public sealed record DevBotTurn(
 
 public sealed record DevBotAnswerOption(Guid Id, string Text, bool IsMine, bool AuthorClaimedMirage, bool AuthorBetSafe);
 
-public sealed record DevBotDecision(string? Answer, string? TellChoice, Guid? VoteAnswerId, ConfidenceLevel Confidence);
+public sealed record DevBotDecision(IReadOnlyList<string> AnswerCandidates, string? TellChoice, Guid? VoteAnswerId, ConfidenceLevel Confidence);

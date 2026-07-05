@@ -6,6 +6,7 @@ Development bots are for local playtesting only. They let one human host fill a 
 
 - When dev bots are enabled on the backend, the lobby host sees `Add 3 dev bots`.
 - Bots join as ready players and act automatically during answer, tell, and vote phases.
+- During answer phase, the LLM returns five one-word answer candidates and the server randomly submits one of them.
 - Bots require `OPENAI_API_KEY` or `OpenAI:ApiKey`; there is no deterministic fallback.
 - If the LLM call fails, the bot turn is retried on the next runner tick.
 
@@ -34,7 +35,7 @@ The server explains Sarab to the agent every turn:
 
 - Almost everyone gets one secret prompt.
 - One hidden mirage player may have a different prompt.
-- Answer phase requires exactly one word.
+- Answer phase asks for five possible one-word answers; Sarab randomly picks the submitted word.
 - Tell phase has `claim`, `safe`, or `neutral`.
 - Vote phase requires choosing another player's anonymous answer.
 - Confidence controls risk and reward.

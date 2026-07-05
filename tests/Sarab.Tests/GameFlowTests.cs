@@ -124,16 +124,20 @@ public sealed class GameFlowTests
         rooms.SubmitAnswer("host", new SubmitAnswerRequest("palm"));
         foreach (var turn in rooms.GetPendingBotTurns())
         {
-            await rooms.ApplyBotDecisionAsync(turn, new DevBotDecision("shade", null, null, ConfidenceLevel.Medium));
+            await rooms.ApplyBotDecisionAsync(turn, new DevBotDecision(["shade", "water", "dune", "sun", "oasis"], null, null, ConfidenceLevel.Medium));
         }
 
         var snapshot = HostSnapshot(rooms, lobby.Code);
         Assert.Equal(RoomPhase.SelfReport, snapshot.Phase);
+        var allowedBotAnswers = new[] { "shade", "water", "dune", "sun", "oasis" };
+        Assert.All(
+            snapshot.Answers.Where(answer => answer.AuthorName?.StartsWith("Sarab Bot", StringComparison.Ordinal) == true),
+            answer => Assert.Contains(answer.Text, allowedBotAnswers));
 
         rooms.FinishSelfReport("host");
         foreach (var turn in rooms.GetPendingBotTurns())
         {
-            await rooms.ApplyBotDecisionAsync(turn, new DevBotDecision(null, "safe", null, ConfidenceLevel.Medium));
+            await rooms.ApplyBotDecisionAsync(turn, new DevBotDecision([], "safe", null, ConfidenceLevel.Medium));
         }
 
         snapshot = HostSnapshot(rooms, lobby.Code);
@@ -144,7 +148,7 @@ public sealed class GameFlowTests
         foreach (var turn in rooms.GetPendingBotTurns())
         {
             var voteTarget = turn.Answers.First(answer => !answer.IsMine).Id;
-            await rooms.ApplyBotDecisionAsync(turn, new DevBotDecision(null, null, voteTarget, ConfidenceLevel.Medium));
+            await rooms.ApplyBotDecisionAsync(turn, new DevBotDecision([], null, voteTarget, ConfidenceLevel.Medium));
         }
 
         snapshot = HostSnapshot(rooms, lobby.Code);

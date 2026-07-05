@@ -60,16 +60,23 @@ public sealed class DevBotBrain(HttpClient http, IConfiguration configuration) :
                         additionalProperties = false,
                         properties = new
                         {
-                            answer = new { type = new[] { "string", "null" }, description = "One word answer during Answer phase, otherwise null." },
+                            answerCandidates = new
+                            {
+                                type = "array",
+                                description = "During Answer phase, provide exactly five different one-word answer candidates. Otherwise return an empty array.",
+                                minItems = 0,
+                                maxItems = 5,
+                                items = new { type = "string" }
+                            },
                             tellChoice = new { type = new[] { "string", "null" }, @enum = new object?[] { "claim", "safe", "neutral", null } },
                             voteAnswerId = new { type = new[] { "string", "null" }, description = "Answer id to vote for during Vote phase, otherwise null." },
                             confidence = new { type = "string", @enum = new[] { "Low", "Medium", "High" } }
                         },
-                        required = new[] { "answer", "tellChoice", "voteAnswerId", "confidence" }
+                        required = new[] { "answerCandidates", "tellChoice", "voteAnswerId", "confidence" }
                     }
                 }
             },
-            max_output_tokens = 160,
+            max_output_tokens = 240,
             store = false
         };
     }
@@ -140,17 +147,30 @@ public sealed class DevBotBrain(HttpClient http, IConfiguration configuration) :
             ? parsedConfidence
             : ConfidenceLevel.Medium;
         var voteAnswerId = Guid.TryParse(choice.VoteAnswerId, out var parsedVoteAnswerId) ? (Guid?)parsedVoteAnswerId : null;
-        return new DevBotDecision(choice.Answer, choice.TellChoice, voteAnswerId, confidence);
+        return new DevBotDecision(
+            NormalizeCandidates(choice.AnswerCandidates),
+            choice.TellChoice,
+            voteAnswerId,
+            confidence);
     }
 
-    private sealed record BotChoice(string? Answer, string? TellChoice, string? VoteAnswerId, string? Confidence);
+    private static IReadOnlyList<string> NormalizeCandidates(IReadOnlyList<string>? candidates)
+    {
+        return candidates?
+            .Where(candidate => !string.IsNullOrWhiteSpace(candidate))
+            .Select(candidate => candidate.Trim())
+            .Take(5)
+            .ToList() ?? [];
+    }
+
+    private sealed record BotChoice(IReadOnlyList<string>? AnswerCandidates, string? TellChoice, string? VoteAnswerId, string? Confidence);
 
     private const string DevBotInstructions = """
         You are a Sarab development bot. Sarab is a family-friendly realtime party game.
         The rules:
         - Each round, almost everyone receives the same secret prompt.
         - One player may receive a hidden alternate prompt, but no player is told whether they are the mirage.
-        - In the Answer phase, submit exactly one word related to your own prompt. Avoid spaces and avoid being too obvious.
+        - In the Answer phase, produce exactly five different one-word answer candidates related to your own prompt. Avoid spaces and avoid being too obvious. Sarab will randomly pick one candidate for your final answer.
         - In the self-report/tell phase, choose:
           claim = you think you might be the mirage; correct claims earn points, false claims lose points.
           safe = you bet you are not the mirage; correct safe bets earn a small bonus, wrong safe bets lose points.
