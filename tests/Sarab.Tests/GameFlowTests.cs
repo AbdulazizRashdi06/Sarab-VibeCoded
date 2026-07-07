@@ -74,6 +74,26 @@ public sealed class GameFlowTests
     }
 
     [Fact]
+    public async Task Player_can_reconnect_to_same_room_with_new_connection_id()
+    {
+        using var provider = BuildProvider();
+        var rooms = provider.GetRequiredService<RoomManager>();
+        var lobby = await rooms.CreateRoomAsync("host", new CreateRoomRequest("Host"));
+        var hostId = lobby.You!.Value;
+
+        await rooms.DisconnectAsync("host");
+        var reconnected = await rooms.ReconnectRoomAsync("host-reconnected", new ReconnectRoomRequest(lobby.Code, hostId));
+
+        Assert.Equal(lobby.Code, reconnected.Code);
+        Assert.Equal(hostId, reconnected.You);
+        Assert.Contains(reconnected.Players, player => player.Id == hostId && player.Connected);
+
+        rooms.UpdateReady("host-reconnected", true);
+        var snapshot = rooms.GetSnapshotsForRoom(lobby.Code).Single().Snapshot;
+        Assert.Contains(snapshot.Players, player => player.Id == hostId && player.Ready);
+    }
+
+    [Fact]
     public async Task Host_can_advance_from_results_to_the_next_round()
     {
         using var provider = BuildProvider();

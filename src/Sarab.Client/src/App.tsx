@@ -217,6 +217,7 @@ function App() {
   const [mode, setMode] = useState<'game' | 'admin'>('game')
   const [connection, setConnection] = useState<HubConnection | null>(null)
   const [room, setRoom] = useState<RoomSnapshot | null>(null)
+  const roomRef = useRef<RoomSnapshot | null>(null)
   const [avatarParts, setAvatarParts] = useState<AvatarPart[]>([])
   const [avatar, setAvatar] = useState<PlayerAvatar>(() => loadSavedAvatar())
   const [soundMuted, setSoundMuted] = useState(() => localStorage.getItem('sarab:muted') === 'true')
@@ -228,6 +229,10 @@ function App() {
     document.documentElement.lang = locale === 'ar' ? 'ar-OM' : 'en'
     document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr'
   }, [locale])
+
+  useEffect(() => {
+    roomRef.current = room
+  }, [room])
 
   useEffect(() => {
     return () => {
@@ -252,13 +257,43 @@ function App() {
 
     const next = new HubConnectionBuilder()
       .withUrl(`${apiBase}/hubs/game`)
-      .withAutomaticReconnect()
+      .withAutomaticReconnect([0, 2000, 5000, 10000, 30000, 60000])
       .configureLogging(LogLevel.Information)
       .build()
+
+    next.keepAliveIntervalInMilliseconds = 15000
+    next.serverTimeoutInMilliseconds = 60000
 
     next.on('roomUpdated', (snapshot: RoomSnapshot) => {
       setRoom(snapshot)
       setError('')
+    })
+
+    next.onreconnecting(() => {
+      setError('Connection dropped. Reconnecting...')
+    })
+
+    next.onreconnected(async () => {
+      const currentRoom = roomRef.current
+      if (!currentRoom?.you) {
+        setError('')
+        return
+      }
+
+      try {
+        const snapshot = await next.invoke<RoomSnapshot>('ReconnectRoom', {
+          roomCode: currentRoom.code,
+          playerId: currentRoom.you,
+        })
+        setRoom(snapshot)
+        setError('')
+      } catch (err) {
+        setError(err instanceof Error ? `Reconnected, but room restore failed: ${err.message}` : 'Reconnected, but room restore failed.')
+      }
+    })
+
+    next.onclose(() => {
+      setError('Connection closed. Refresh or rejoin the room.')
     })
 
     await next.start()

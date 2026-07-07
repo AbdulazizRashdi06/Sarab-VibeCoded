@@ -58,6 +58,28 @@ public sealed class RoomManager(IServiceScopeFactory scopeFactory)
         }
     }
 
+    public async Task<RoomSnapshotDto> ReconnectRoomAsync(string connectionId, ReconnectRoomRequest request, CancellationToken cancellationToken = default)
+    {
+        var categories = await GetCatalogAsync(cancellationToken);
+        lock (_gate)
+        {
+            if (!_rooms.TryGetValue(request.RoomCode.Trim().ToUpperInvariant(), out var room))
+            {
+                throw new InvalidOperationException("Room not found.");
+            }
+
+            var player = room.Players.FirstOrDefault(x => x.Id == request.PlayerId)
+                ?? throw new InvalidOperationException("Player not found in this room.");
+
+            room.Categories = categories;
+            player.Connections.Add(connectionId);
+            player.Connected = true;
+            player.DisconnectedAt = null;
+            _connections[connectionId] = (room.Code, player.Id);
+            return Snapshot(room, player.Id);
+        }
+    }
+
     public void UpdateAvatar(string connectionId, PlayerAvatarDto avatar)
     {
         lock (_gate)

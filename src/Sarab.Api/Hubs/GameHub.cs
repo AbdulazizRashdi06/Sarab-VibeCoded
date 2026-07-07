@@ -26,6 +26,14 @@ public sealed class GameHub(
         return snapshot;
     }
 
+    public async Task<RoomSnapshotDto> ReconnectRoom(ReconnectRoomRequest request)
+    {
+        var snapshot = await rooms.ReconnectRoomAsync(Context.ConnectionId, request, Context.ConnectionAborted);
+        await Groups.AddToGroupAsync(Context.ConnectionId, snapshot.Code, Context.ConnectionAborted);
+        await BroadcastRoom(snapshot.Code);
+        return snapshot;
+    }
+
     public async Task<RoomSnapshotDto> AddDevBots(int count)
     {
         if (!DevBotsAllowed())

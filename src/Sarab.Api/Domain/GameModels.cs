@@ -122,6 +122,8 @@ public sealed record CreateRoomRequest(string PlayerName, string Locale = "en", 
 
 public sealed record JoinRoomRequest(string RoomCode, string PlayerName, string Locale = "en", PlayerAvatarDto? Avatar = null);
 
+public sealed record ReconnectRoomRequest(string RoomCode, Guid PlayerId);
+
 public sealed record StartGameRequest(
     Guid CategoryId,
     int TotalRounds,
